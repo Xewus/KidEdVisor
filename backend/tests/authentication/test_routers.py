@@ -22,11 +22,26 @@ from tests.conftest import (
     # (False, False, False, False, False)
     "url, alloweds",
     [
-        (REG_URL, (False, True, False, False, False)),
-        (CONFIRM_URL + "/" + "a" * 32, (True, False, False, False, False)),
-        (TOKEN_URL, (False, True, False, False, False)),
-        (CHANGE_PASSWORD_URL, (False, True, False, False, False)),
-        (FORGET_PASSWORD, (False, True, False, False, False)),
+        (
+            REG_URL,
+            (False, True, False, False, False),
+        ),
+        (
+            CONFIRM_URL + "/" + "a" * 32,
+            (True, False, False, False, False),
+        ),
+        (
+            TOKEN_URL,
+            (False, True, False, False, False),
+        ),
+        (
+            CHANGE_PASSWORD_URL,
+            (False, True, False, False, False),
+        ),
+        (
+            FORGET_PASSWORD,
+            (False, True, False, False, False),
+        ),
         (
             FORGET_PASSWORD + "/" + "a" * 32,
             (True, False, False, False, False),
@@ -315,12 +330,7 @@ def test_password_change(token_user_1: tuple[TestClient, str]):
     # get token with new password
     response = http_client.post(
         url=TOKEN_URL,
-        data=(
-            {
-                "username": Users.user_1["email"],
-                "password": NEW_PASSWORD,
-            }
-        ),
+        data=({"username": Users.user_1["email"], "password": NEW_PASSWORD}),
     )
     assert response.status_code == status.HTTP_200_OK, response.text
 
@@ -362,5 +372,26 @@ def test_forget_password(
     response = http_client.get(url=Storage.confirm_link)
     assert response.status_code == status.HTTP_200_OK, response.text
 
-    data = json.loads(response.text)
-    assert data["password"], "No password in response"
+    data: dict = json.loads(response.text)
+    new_paasword = data.get("password")
+
+    assert new_paasword, "No password in response"
+
+    # get token with new password
+    response = http_client.post(
+        url=TOKEN_URL,
+        data=({"username": Users.user_1["email"], "password": new_paasword},),
+    )
+    assert response.status_code == status.HTTP_200_OK, response.text
+
+    # no token with old password
+    response = http_client.post(
+        url=TOKEN_URL,
+        data=(
+            {
+                "username": Users.user_1["email"],
+                "password": Users.user_1["password"],
+            }
+        ),
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST, response.text
