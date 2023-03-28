@@ -1,0 +1,56 @@
+---
+version: '3.9'
+
+volumes:
+  pg_data:
+  redis_data:
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: pg_db
+    command: -p 15432
+    expose:
+      - 15432
+    env_file:
+      - ../.env
+    volumes:
+      - pg_data:/var/lib/postgresql/data/
+    restart: always
+
+  redis:
+    image: redis:7.0-alpine
+    container_name: redis
+    command: --port 16379
+    expose:
+      - 16379
+    volumes:
+      - redis_data:/var/lib/redis
+    restart: always
+
+  app:
+    build: ../backend
+    container_name: app
+    command: >
+      bash -c "alembic upgrade head &&
+      uvicorn src.main:app --host 0.0.0.0 --port 8080"
+    ports:
+      - 8080:8080
+    depends_on:
+      - postgres
+      - redis
+    env_file:
+      - ../.env
+    restart: always
+
+  nginx:
+    image: nginx:1.23.3-alpine
+    container_name: proxy
+    restart: always
+    ports:
+      - 80:80
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+...
