@@ -1,0 +1,8 @@
+from src.db.postgres.crud import CRUD
+from .models import TeacherModel
+
+class TeacherCRUD(CRUD):
+    ...
+
+
+tutor_crud = TeacherCRUD(TeacherModel)

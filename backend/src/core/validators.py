@@ -1,10 +1,12 @@
-from datetime import date, timedelta
+from time import time
 
 from email_validator import (
     EmailNotValidError,
     EmailUndeliverableError,
     validate_email,
 )
+
+from src.config import Limits
 
 from .exceptions import BadRequestException
 
@@ -53,28 +55,25 @@ def password_validator(password: str) -> str:
     return password
 
 
-def is_adult_validator(born: date) -> date:
+def is_adult_validator(born: int) -> int:
     """Checking that a person's age is within acceptable limits.
 
     #### Args:
-    - born (date):
-        User's date of birth as `1987-01-23`.
+    - born (int):
+        User's date of birth as `1041454800`.
 
     #### Raises:
     - ValueError:
         Wrong age.
 
     #### Returns:
-    - date:
+    - int:
         Cheked date of birth.
     """
-    today = date.today()
-    min_age = today - timedelta(days=365 * 18 + 5)
-    if born > min_age:
+    if born + Limits.ADULT_AGE > time():
         raise ValueError("you are so young")
 
-    max_age = today - timedelta(days=365 * 99)
-    if born < max_age:
+    if born < time() - Limits.MAX_AGE:
         raise ValueError("you are too old")
 
     return born

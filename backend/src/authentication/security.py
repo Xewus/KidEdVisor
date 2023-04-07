@@ -7,7 +7,7 @@ from fastapi import Depends
 from fastapi.security.oauth2 import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from src.config import Limits, settings
 from src.core.enums import AppPaths, UserType
@@ -17,7 +17,7 @@ from src.core.exceptions import (
     ForbiddenException,
     NoAdminException,
 )
-from src.db.postgres.database import get_db
+from src.db.postgres.database import get_db, postgres_url
 
 from .crud import auth_crud
 from .models import AuthModel
@@ -56,7 +56,7 @@ async def authenticate_user(
         raise BadRequestException(f"user with email: {email} not found")
 
     if not pwd_context.verify(password, user.password):
-        raise BadRequestException("invlid password")
+        raise BadRequestException("invalid password")
 
     return user
 
@@ -175,7 +175,7 @@ def get_hash_password(password: str) -> str:
 
 async def admin_always_exists() -> None:
     """Create admin if it not exists."""
-    dsn = settings.postgres_url.replace("+asyncpg", "")
+    dsn = postgres_url.replace("+asyncpg", "")
     try:
         conn: Connection = await asyncpg.connect(dsn)
         admin = await conn.fetchrow(

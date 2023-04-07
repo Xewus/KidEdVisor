@@ -1,3 +1,6 @@
+import os
+
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,6 +13,8 @@ from src.config import settings
 from src.core.utils import change_openapi_schema
 from src.db.postgres.database import check_postgres
 from src.db.redis.database import check_redis
+
+load_dotenv(".env")
 
 app = FastAPI(
     debug=settings.debug,
@@ -56,7 +61,11 @@ app.add_middleware(
 
 @app.exception_handler(RequestValidationError)
 async def bad_request_handler(request: Request, exc: RequestValidationError):
-    desc = [(err["loc"][1], err["msg"]) for err in exc.errors()]
+    errors = exc.errors()
+    if len(errors) > 1:
+        desc = [(err["loc"][0], err["msg"]) for err in exc.errors()]
+    else:
+        desc = errors
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content={"detail": desc},
@@ -65,9 +74,10 @@ async def bad_request_handler(request: Request, exc: RequestValidationError):
 
 @app.on_event("startup")
 async def start_up():
-    check_redis()
-    await check_postgres()
-    await admin_always_exists()
+    if not os.environ.get("TESTING"):
+        check_redis()
+        await check_postgres()
+        await admin_always_exists()
 
 
 @app.get(

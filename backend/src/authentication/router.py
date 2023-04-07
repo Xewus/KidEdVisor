@@ -10,7 +10,7 @@ from fastapi import (
     status,
 )
 from fastapi.responses import RedirectResponse
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from src.config import Limits
 from src.core.enums import RouteTags
@@ -27,7 +27,12 @@ from src.mail import get_send_confirm_link
 from .crud import auth_crud, temp_crud
 from .forms import EmailForm, Oauth2EmailForm, PasswordForm
 from .models import AuthModel
-from .schemes import CreateTempUserScheme, PasswordScheme, TokenScheme
+from .schemes import (
+    CreateTempUserScheme,
+    PasswordScheme,
+    ResponseAuthScheme,
+    TokenScheme,
+)
 from .security import (
     authenticate_user,
     create_JWT_token,
@@ -70,7 +75,7 @@ async def registration(
 
     new_user.password = get_hash_password(new_user.password)
     uuid = temp_crud.set_temp_user(new_user)
-    link = request.url_for("confirm_registration", uuid=uuid)
+    link = request.url_for("confirm_registration", uuid=uuid)._url
     backgrond_task.add_task(send_mail, new_user.email, link)
     return link  # for development. return None
 
@@ -98,7 +103,7 @@ async def confirm_registration(
     if not temp_user:
         raise NotFoundException("start again please")
 
-    _, err = await auth_crud.create(db, temp_user, True)
+    _, err = await auth_crud.create(db, temp_user.dict(), True)
     if err is not None:
         raise UnprocessableEntityException(err)
 
@@ -165,7 +170,7 @@ async def forget_password(
         raise ForbiddenException
 
     uuid = temp_crud.set_want_password(form.email)
-    link = request.url_for("get_new_password", uuid=uuid)
+    link = request.url_for("get_new_password", uuid=uuid)._url
     backgrond_task.add_task(send_mail, form.email, link)
     return link  # for development. return None
 
@@ -215,7 +220,7 @@ async def get_new_password(
     path="/all",
     summary="Get all users",
     description="Access for admin only",
-    response_model=list[AuthModel],
+    response_model=list[ResponseAuthScheme],
 )
 async def get_all_auths(
     db: AsyncSession = Depends(get_db),

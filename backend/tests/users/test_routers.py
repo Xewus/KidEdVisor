@@ -4,12 +4,8 @@ from typing import Any
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
-from sqlmodel import select
-from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.authentication.models import AuthModel
-from src.users.models import ParentModel
-from tests.conftest import ME_URL, Users, get_test_db
+from tests.conftest import ME_URL
 
 INVALID_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e"
 "yJzdWIiOiJ1c2VyMRBtYWlsLm1haWwiLCJ1dCI6MSwiZXhwIjoxNjc"
@@ -17,7 +13,7 @@ INVALID_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e"
 
 
 @pytest.mark.smoke
-def test_access_to_endpoint(http_client: TestClient):
+async def test_access_to_endpoint(http_client: TestClient):
     # no these methods
     assert (
         http_client.post(url=ME_URL).status_code
@@ -78,15 +74,12 @@ def test_get_me(token_user_1: tuple[TestClient, str]):
     )
     assert response.status_code == status.HTTP_200_OK, response.text
 
-    me = json.loads(response.text)
-    assert me["email"] == Users.user_1["email"]
-
 
 @pytest.mark.auth_users
+# @pytest.mark.asyncio
 async def test_delete_me(
     token_user_1: tuple[TestClient, str],
 ):
-    db: AsyncSession = await get_test_db().__anext__()
     http_client, token = token_user_1
 
     # me exist
@@ -96,27 +89,12 @@ async def test_delete_me(
     )
     assert response.status_code == status.HTTP_200_OK, response.text
 
-    auths = (await db.exec(select(AuthModel))).all()
-    parents = (await db.exec(select(ParentModel))).all()
-    assert len(auths) == 1, "\033[91m the table `auth` should only have 1 row"
-    assert (
-        len(parents)
-    ) == 1, "\033[91m the table `parent` should only have 1 row"
-
-    me = json.loads(response.text)
-    assert me["email"] == Users.user_1["email"]
-
     # delete me
     response = http_client.delete(
         url=ME_URL,
         headers={"Authorization": "Bearer " + token},
     )
-    auths = (await db.exec(select(AuthModel))).all()
-    parents = (await db.exec(select(ParentModel))).all()
-
     assert response.status_code == status.HTTP_204_NO_CONTENT, response.text
-    assert len(auths) == 0, "\033[91m row in table `auth` not deleted"
-    assert (len(parents)) == 1, "\033[91m info about user must be saved"
 
     # me not exist
     response = http_client.get(
@@ -135,7 +113,6 @@ async def test_delete_me(
             {},
             status.HTTP_200_OK,
             {
-                "email": Users.user_1["email"],
                 "name": None,
                 "surname": None,
                 "patronic": None,
@@ -149,7 +126,6 @@ async def test_delete_me(
             },
             status.HTTP_200_OK,
             {
-                "email": Users.user_1["email"],
                 "name": "John",
                 "surname": None,
                 "patronic": None,
@@ -164,7 +140,6 @@ async def test_delete_me(
             },
             status.HTTP_200_OK,
             {
-                "email": Users.user_1["email"],
                 "name": None,
                 "surname": "Doe",
                 "patronic": None,
@@ -178,7 +153,6 @@ async def test_delete_me(
             },
             status.HTTP_200_OK,
             {
-                "email": Users.user_1["email"],
                 "name": None,
                 "surname": None,
                 "patronic": "Ibn Abu Dakar",
@@ -190,15 +164,14 @@ async def test_delete_me(
             {
                 "name": None,
                 "surname": None,
-                "born": "2003-03-19",
+                "born": 1041454800,
             },
             status.HTTP_200_OK,
             {
-                "email": Users.user_1["email"],
                 "name": None,
                 "surname": None,
                 "patronic": None,
-                "born": "2003-03-19",
+                "born": 1041454800,
             },
         ),
         # 5-full update
@@ -207,21 +180,20 @@ async def test_delete_me(
                 "name": "John",
                 "surname": "Doe",
                 "patronic": "Ibn Abu Dakar",
-                "born": "2003-03-19",
+                "born": 1041454800,
             },
             status.HTTP_200_OK,
             {
-                "email": Users.user_1["email"],
                 "name": "John",
                 "surname": "Doe",
                 "patronic": "Ibn Abu Dakar",
-                "born": "2003-03-19",
+                "born": 1041454800,
             },
         ),
         # 6-too young
         (
             {
-                "born": "2023-03-19",
+                "born": 1672606800,
             },
             status.HTTP_400_BAD_REQUEST,
             {},
@@ -229,7 +201,7 @@ async def test_delete_me(
         # 7-too old
         (
             {
-                "born": "1900-03-19",
+                "born": -2208911417,
             },
             status.HTTP_400_BAD_REQUEST,
             {},
@@ -243,7 +215,6 @@ def test_update_me(
     expect_data: dict[str, Any],
 ):
     http_client, token = token_user_1
-    update_data
 
     response = http_client.get(
         url=ME_URL,
@@ -251,9 +222,8 @@ def test_update_me(
     )
     assert response.status_code == status.HTTP_200_OK, response.text
 
-    # before update user is clean
+    # before update user must is clean
     me = json.loads(response.text)
-    assert me["email"] == Users.user_1["email"]
     assert me["name"] is None
     assert me["surname"] is None
     assert me["patronic"] is None

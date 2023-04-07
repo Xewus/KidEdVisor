@@ -1,20 +1,48 @@
 import asyncpg
 from asyncpg.connection import Connection
-from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy.orm import sessionmaker
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy import Integer
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import (
+    Mapped,
+    declarative_base,
+    mapped_column,
+    sessionmaker,
+)
 
 from src.config import settings
+from src.core.utils import postgres_dsn
 
-engine = create_async_engine(
-    url=settings.postgres_url,
-    future=True,
+
+class IDTable:
+    """Mixin to add `id` field to table with integer type as primary key.
+
+    #### Attrs:
+    - id (int | None):
+        Primary key for table.
+    """
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+
+postgres_url = postgres_dsn(
+    user=settings.postgres_user,
+    password=settings.postgres_password,
+    host=settings.postgres_host,
+    port=settings.postgres_port,
+    db_name=settings.postgres_db_name,
+)
+
+Base = declarative_base(cls=IDTable)
+
+aengine = create_async_engine(
+    url=postgres_url,
     echo=settings.debug,
 )
 
+aengine.echo = True
 
-SessionMaker = sessionmaker(
-    bind=engine,
+ASessionMaker = sessionmaker(
+    bind=aengine,
     class_=AsyncSession,
     autoflush=False,
     autocommit=False,
@@ -23,8 +51,8 @@ SessionMaker = sessionmaker(
 
 
 async def get_db() -> AsyncSession:
-    """Get connection to the PostgresSQL."""
-    async with SessionMaker() as session:
+    """Get connection to the Postgres."""
+    async with ASessionMaker() as session:
         yield session
 
 
@@ -36,8 +64,9 @@ async def check_postgres() -> None:
         No connection to PostgreSQL.
     """
     try:
-        dsn = settings.postgres_url.replace("+asyncpg", "")
+        dsn = postgres_url.replace("+asyncpg", "")
         conn: Connection = await asyncpg.connect(dsn)
+        await conn.execute("SELECT 1;")
         await conn.close()
     except Exception as exc:
         raise ConnectionError(

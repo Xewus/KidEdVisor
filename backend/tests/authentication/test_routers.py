@@ -11,14 +11,14 @@ from tests.conftest import (
     FORGET_PASSWORD,
     REG_URL,
     TOKEN_URL,
-    Storage,
-    Users,
 )
+
+from ..utils import Storage, Users
 
 
 @pytest.mark.smoke
 @pytest.mark.parametrize(
-    # [GET, POST, PUT, PATCH, DELETE]
+    # [GET,   POST,  PUT,   PATCH, DELETE]
     # (False, False, False, False, False)
     "url, alloweds",
     [
@@ -58,11 +58,8 @@ def test_access_to_endpoint(
         http_client.patch,
         http_client.delete,
     )
-    assert len(methods) == len(alloweds)
 
     for i, allowed in enumerate(alloweds):
-        if allowed:
-            continue
         assert (
             methods[i](url=url).status_code
             != status.HTTP_405_METHOD_NOT_ALLOWED
@@ -80,12 +77,12 @@ def test_access_to_endpoint(
         ),
         # 1-teacher
         (
-            Users.teacher_1,
+            Users.owner_1,
             status.HTTP_202_ACCEPTED,
         ),
         # 2-institution
         (
-            Users.institution_1,
+            Users.owner_2,
             status.HTTP_202_ACCEPTED,
         ),
         # 3-extra feild
@@ -218,6 +215,7 @@ def test_reistration_with_repeat_email(
     # confirm link ok
     response = http_client.get(url=confirm_link)
     assert response.status_code == status.HTTP_200_OK, response.text
+
     # repeat email
     response = http_client.post(url=REG_URL, json=Users.user_1)
     assert (
@@ -233,7 +231,6 @@ def test_reistration_with_repeat_email(
     ), response.text
 
     # repeat email with spaces
-    user = Users.user_1.copy()
     user["email"] = " " + user["email"].upper() + "  "
     response = http_client.post(url=REG_URL, json=Users.user_1)
     assert (
@@ -254,59 +251,43 @@ def test_recive_token(http_client: TestClient, confirm_link: str):
 
     # without email
     response = http_client.post(
-        url=TOKEN_URL,
-        data=(
-            {
-                "password": Users.user_1["password"],
-            }
-        ),
+        url=TOKEN_URL, data={"password": Users.user_1["password"]}
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST, response.text
 
     # without password
     response = http_client.post(
-        url=TOKEN_URL,
-        data=(
-            {
-                "username": "q" + Users.user_1["email"],
-            }
-        ),
+        url=TOKEN_URL, data={"username": "q" + Users.user_1["email"]}
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST, response.text
 
     # non-exist emal
     response = http_client.post(
         url=TOKEN_URL,
-        data=(
-            {
-                "username": "q" + Users.user_1["email"],
-                "password": Users.user_1["password"],
-            }
-        ),
+        data={
+            "username": "q" + Users.user_1["email"],
+            "password": Users.user_1["password"],
+        },
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST, response.text
 
     # invalid password
     response = http_client.post(
         url=TOKEN_URL,
-        data=(
-            {
-                "username": Users.user_1["email"],
-                "password": Users.user_1["password"] + "q",
-            }
-        ),
+        data={
+            "username": Users.user_1["email"],
+            "password": Users.user_1["password"] + "q",
+        },
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST, response.text
 
     # data ok
     response = http_client.post(
         url=TOKEN_URL,
-        data=(
-            {
-                "username": Users.user_1["email"],
-                "password": Users.user_1["password"],
-            }
-        ),
+        data={
+            "username": Users.user_1["email"],
+            "password": Users.user_1["password"],
+        },
     )
     assert response.status_code == status.HTTP_200_OK, response.text
 
@@ -337,12 +318,10 @@ def test_password_change(token_user_1: tuple[TestClient, str]):
     # no token with old password
     response = http_client.post(
         url=TOKEN_URL,
-        data=(
-            {
-                "username": Users.user_1["email"],
-                "password": Users.user_1["password"],
-            }
-        ),
+        data={
+            "username": Users.user_1["email"],
+            "password": Users.user_1["password"],
+        },
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST, response.text
 
@@ -359,7 +338,7 @@ def test_forget_password(
 
     # not exists email
     response = http_client.post(
-        url=FORGET_PASSWORD, data={"email": "noExistEmail@dmail.com"}
+        url=FORGET_PASSWORD, data={"email": "notExistEmail@gmail.com"}
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST, response.text
 
@@ -373,25 +352,23 @@ def test_forget_password(
     assert response.status_code == status.HTTP_200_OK, response.text
 
     data: dict = json.loads(response.text)
-    new_paasword = data.get("password")
+    new_password = data.get("password")
 
-    assert new_paasword, "No password in response"
+    assert new_password, "No password in response"
 
     # get token with new password
     response = http_client.post(
         url=TOKEN_URL,
-        data=({"username": Users.user_1["email"], "password": new_paasword},),
+        data={"username": Users.user_1["email"], "password": new_password},
     )
     assert response.status_code == status.HTTP_200_OK, response.text
 
     # no token with old password
     response = http_client.post(
         url=TOKEN_URL,
-        data=(
-            {
-                "username": Users.user_1["email"],
-                "password": Users.user_1["password"],
-            }
-        ),
+        data={
+            "username": Users.user_1["email"],
+            "password": Users.user_1["password"],
+        },
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST, response.text

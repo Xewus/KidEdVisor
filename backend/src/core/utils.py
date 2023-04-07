@@ -1,6 +1,8 @@
 from random import SystemRandom
 from string import ascii_letters
 
+from pydantic import PostgresDsn
+
 random_choice = SystemRandom().choice
 
 
@@ -37,6 +39,19 @@ def change_openapi_schema(openapi_schema: dict) -> dict:
             responses["400"] = new_error_response
             responses["422"] = new_error_response
     return openapi_schema
+
+
+def postgres_dsn(
+    user: str,
+    password: str,
+    host: str,
+    port: int,
+    db_name: str | None = None,
+) -> PostgresDsn:
+    dsn = f"postgresql+asyncpg://{user}:{password}@{host}:{port}"
+    if db_name:
+        dsn = f"{dsn}/{db_name}"
+    return dsn
 
 
 def random_string(length: int) -> str:

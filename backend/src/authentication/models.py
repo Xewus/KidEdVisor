@@ -1,18 +1,13 @@
-"""ORM models.
-"""
-from typing import TYPE_CHECKING, Optional
-
-from pydantic import validator
-from sqlmodel import Field, Relationship
+from pydantic import Field, validator
+from sqlalchemy import Boolean, Column, Integer, String
 
 from src.config import Limits
-from src.core.mixins import NamedTable, WithIDTable
+from src.core.enums import TableNames, UserType
+from src.core.mixins.models import EmailTable
 from src.core.validators import email_validator
+from src.db.postgres.database import Base
 
 from .schemes import CreateTempUserScheme
-
-if TYPE_CHECKING:  # pragma: no cover
-    from src.users.models import ParentModel
 
 
 class TempUserModel(CreateTempUserScheme):
@@ -35,31 +30,31 @@ class TempUserModel(CreateTempUserScheme):
     _good_email = validator("email", allow_reuse=True)(email_validator)
 
 
-class AuthModel(NamedTable, WithIDTable, TempUserModel, table=True):
+class AuthModel(Base, EmailTable):
     """Table for authentication data.
 
     #### Attrs:
     - id (int):
         Iidentifier.
-    - user_type (int):
-        UserType.
-    - password (str):
-        Hashed pasword.
     - email (str):
         User's email.
     - is_active (bool): Default False.
         Is the user activated.
+    - user_type (int):
+        UserType.
+    - password (str):
+        Hashed pasword.
     """
 
-    email: str = Field(
-        unique=True,
-        index=True,
-        max_length=Limits.MAX_LEN_EMAIL,
-    )
-    is_active: bool = Field(
-        default=False,
-        description="Is the user activated",
-    )
+    __tablename__ = TableNames.AUTH
 
-    # For sqlalchemy, not table field.
-    parent: Optional["ParentModel"] = Relationship(back_populates="auth")
+    is_active = Column(
+        Boolean,
+        default=False,
+    )
+    user_type = Column(
+        Integer,
+        default=UserType.PARENT.value,
+        nullable=False,
+    )
+    password = Column(String(Limits.MAX_LEN_HASH_PASSWORD), nullable=False)

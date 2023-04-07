@@ -1,11 +1,15 @@
+"""The data to be written to the database must be pre-checked!
+The database creates the `id` itself.
+"""
 import pytest
 from pydantic.error_wrappers import ValidationError
 
 from src.authentication.models import AuthModel, TempUserModel
 from src.core.enums import UserType
+from tests.conftest import get_test_db
 
 
-@pytest.mark.registration
+@pytest.mark.models
 def test_temp_user_model():
     assert TempUserModel.__fields__.keys() == {
         "user_type",
@@ -42,11 +46,11 @@ def test_temp_user_model():
 
     # another user_type
     temp_user = TempUserModel(
-        user_type=UserType.TEACHER,
+        user_type=UserType.OWNER,
         email="test@gmail.com",
         password="qscESZ123",
     )
-    assert temp_user.user_type == UserType.TEACHER
+    assert temp_user.user_type == UserType.OWNER
     assert temp_user.email == "test@gmail.com"
     assert temp_user.password == "qscESZ123"
 
@@ -67,13 +71,10 @@ def test_temp_user_model():
         )
 
 
-@pytest.mark.registration
-def test_auth_model():
-    """The data to be written to the database must be pre-checked!
-    The database creates the `id` itself.
-    """
+@pytest.mark.models
+def test_auth_model_attrs():
     assert AuthModel.__tablename__ == "auth"
-    assert AuthModel.__fields__.keys() == {
+    assert set(col.name for col in AuthModel.__table__.columns) == {
         "id",
         "user_type",
         "password",
@@ -81,23 +82,40 @@ def test_auth_model():
         "is_active",
     }
 
-    auth_user = AuthModel(
-        user_type=UserType.PARENT,
-        password="qscvbgrey",
-        email="test@gmail.com",
-    )
 
-    assert isinstance(auth_user.id, int | None)
-    assert auth_user.id is None
+@pytest.mark.models
+@pytest.mark.parametrize(
+    "auth",
+    [
+        # 0-default auth
+        {
+            "password": "qscvbgrey",
+            "email": "test@gmail.com",
+        },
+        # 1-parent auth
+        {
+            "user_type": UserType.PARENT.value,
+            "password": "qscvbgrey",
+            "email": "test@gmail.com",
+        },
+        # 2-owner auth
+        {
+            "user_type": UserType.OWNER.value,
+            "password": "qscvbgrey",
+            "email": "test@gmail.com",
+        },
+    ],
+)
+async def test_auth_model_create(auth: dict):
+    db = await anext(get_test_db())
 
-    assert isinstance(auth_user.user_type, int)
-    assert auth_user.user_type == UserType.PARENT
+    model = AuthModel(**auth)
+    db.add(model)
+    await db.flush()
+    await db.refresh(model)
 
-    assert isinstance(auth_user.password, str)
-    assert auth_user.password == "qscvbgrey"
+    assert isinstance(model.id, int)
+    for field, value in auth.items():
+        assert getattr(model, field) == value
 
-    assert isinstance(auth_user.email, str)
-    assert auth_user.email == "test@gmail.com"
-
-    assert isinstance(auth_user.is_active, bool | None)
-    assert not auth_user.is_active
+    await db.close()

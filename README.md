@@ -42,7 +42,7 @@ wsl.exe --shutdown
 ---
 Set and run Postgres:
 ```
-docker run --name db-postgres -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres
+docker run -d --name db-postgres -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:15-alpine
  ```
 Set and run Redis:
 ```
