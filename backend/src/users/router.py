@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query, status
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from src.authentication.models import AuthModel
 from src.authentication.security import get_admin_user, get_token_user
@@ -10,10 +10,10 @@ from src.core.exceptions import (
 )
 from src.db.postgres.database import get_db
 
-from .crud import parent_crud
-from .dependencies import get_token_parent_auth
-from .models import ParentModel
-from .schemes import ResponseParentAuthScheme, UpdateParentScheme
+from .dependencies import get_token_parent
+from .parents.crud import parent_crud
+from .parents.models import ParentModel
+from .parents.schemes import ResponseParentScheme, UpdateParentScheme
 
 router = APIRouter()
 
@@ -30,17 +30,12 @@ admin_router = APIRouter(
 @profile_router.get(
     path="/me",
     summary="View a personal profile",
-    response_model=ResponseParentAuthScheme,
+    response_model=ResponseParentScheme,
 )
 async def watch_me(
-    parent_auth: tuple[ParentModel, AuthModel] = Depends(
-        get_token_parent_auth
-    ),
+    parent: ParentModel = Depends(get_token_parent),
 ):
-    return ResponseParentAuthScheme.from_orm(
-        parent_auth[0],
-        {"email": parent_auth[1].email},
-    )
+    return parent
 
 
 @profile_router.delete(
@@ -53,7 +48,7 @@ async def delete_me(
     db: AsyncSession = Depends(get_db),
     auth_user: AuthModel = Depends(get_token_user),
 ):
-    await parent_crud.delete_auth(db, auth_user)
+    await parent_crud.delete_auth(db, auth_user.email)
     return None
 
 
@@ -66,16 +61,14 @@ async def delete_me(
 async def update_me(
     *,
     db: AsyncSession = Depends(get_db),
-    parent_auth: tuple[ParentModel, AuthModel] = Depends(
-        get_token_parent_auth
-    ),
+    parent: ParentModel = Depends(get_token_parent),
     update_data: UpdateParentScheme,
 ):
-    _, err = await parent_crud.update(
-        db,
-        parent_auth[0],
-        update_data.dict(exclude_none=True),
-    )
+    update_data = update_data.dict(exclude_none=True)
+    if not update_data:
+        return None
+
+    _, err = await parent_crud.update(db, parent, update_data)
     if err is not None:
         raise UnprocessableEntityException(detail=err)
 
@@ -84,7 +77,7 @@ async def update_me(
 
 @admin_router.get(
     path="/all",
-    response_model=list[ParentModel],
+    response_model=list[ResponseParentScheme],
 )
 async def get_all_users(
     db: AsyncSession = Depends(get_db),
@@ -96,7 +89,7 @@ async def get_all_users(
 
 @admin_router.get(
     path="/{user_id}",
-    response_model=ParentModel,
+    response_model=ResponseParentScheme,
 )
 async def read_user(*, db: AsyncSession = Depends(get_db), user_id: int):
     user = await parent_crud.get(db, user_id)

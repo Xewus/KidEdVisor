@@ -1,53 +1,54 @@
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio.session import AsyncSession
 from sqlalchemy.sql.elements import BinaryExpression
-from sqlmodel import SQLModel, select
-from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.config import Limits
+from src.db.postgres.database import Base
 
 
 class CRUD:
     """The set of `CRUD` operations.
 
     #### Methods:
-    - save: tuple[SQLModel, None] | tuple[None, str]
-    - create: tuple[SQLModel, None] | tuple[None, str]
-    - get_many: list[SQLModel]
-    - get: SQLModel | None
-    - update: tuple[SQLModel, None] | tuple[None, str]
+    - save: tuple[Base, None] | tuple[None, str]
+    - create: tuple[Base, None] | tuple[None, str]
+    - get_many: list[Base]
+    - get: Base | None
+    - update: tuple[Base, None] | tuple[None, str]
     """
 
-    model: SQLModel
+    model: Base
 
-    def __init__(self, model: SQLModel) -> None:
+    def __init__(self, model: Base) -> None:
         self.model = model
 
     async def save(
         self,
         db: AsyncSession,
-        obj: SQLModel,
+        obj: Base,
         need_refresh: bool = False,
-    ) -> tuple[SQLModel, None] | tuple[None, str]:
+    ) -> tuple[Base, None] | tuple[None, str]:
         """Save object to database.
 
         #### Args:
         - db (AsyncSession):
             Connecting to the database.
-        - obj (SQLModel):
+        - obj (Base):
             Data to save to the database.
         - need_refresh (bool): Default False.
             Whether to fetch fresh data from the database.
 
         #### Returns:
-        - tuple[SQLModel, None] | tuple[None, str]:
-            (SQLModel, None) if the save is successful.
+        - tuple[Base, None] | tuple[None, str]:
+            (Base, None) if the save is successful.
             (None, error description) if the save is not successful.
         """
         db.add(obj)
         try:
             await db.commit()
         except IntegrityError as err:
-            return None, err.args[0].split(".")[-1]
+            return None, err.args[0].split(":")[1]
 
         if need_refresh:
             await db.refresh(obj)
@@ -56,28 +57,25 @@ class CRUD:
     async def create(
         self,
         db: AsyncSession,
-        new_obj: SQLModel | dict,
+        new_obj: dict,
         need_refresh: bool = False,
-    ) -> tuple[SQLModel, None] | tuple[None, str]:
+    ) -> tuple[Base, None] | tuple[None, str]:
         """Create a new object in the database.
 
         #### Args:
         - db (AsyncSession):
             Connecting to the database.
-        - new_obj (SQLModel | dict):
+        - new_obj (dict):
             Data to save to the database.
         - need_refresh (bool): Default False.
             Whether to fetch fresh data from the database.
 
         #### Returns:
-        - tuple[SQLModel, None] | tuple[None, str]:
-            (SQLModel, None) if the save is successful.
+        - tuple[Base, None] | tuple[None, str]:
+            (Base, None) if the save is successful.
             (None, error description) if the save is not successful.
         """
-        if isinstance(new_obj, dict):
-            db_obj = self.model(**new_obj)
-        else:
-            db_obj = self.model.from_orm(new_obj)
+        db_obj = self.model(**new_obj)
         return await self.save(db, db_obj, need_refresh)
 
     async def get_many(
@@ -86,7 +84,7 @@ class CRUD:
         offset: int | None = 0,
         limit: int | None = Limits.DEFAULT_PAGINATION_SIZE,
         expression: BinaryExpression | None = None,
-    ) -> list[SQLModel]:
+    ) -> list[Base]:
         """Get many objects from the database.
 
         #### Args:
@@ -100,20 +98,20 @@ class CRUD:
             Filter expression.
 
         #### Returns:
-        - list[SQLModel]
+        - list[Base]
             List of objects.
         """
         limit = min(limit, Limits.DEFAULT_PAGINATION_SIZE)
         stmt = select(self.model).offset(offset).limit(limit)
         if expression is not None:
             stmt = stmt.where(expression)
-        return (await db.exec(stmt)).all()
+        return await db.scalars(stmt)
 
     async def get(
         self,
         db: AsyncSession,
         expression: BinaryExpression,
-    ) -> SQLModel | None:
+    ) -> Base | None:
         """Get an object from the database by ID.
 
         #### Args:
@@ -123,25 +121,24 @@ class CRUD:
             Filter expression.
 
         #### Returns:
-        - SQLModel | None:
+        - Base | None:
             An object if it exists in the database else None.
         """
-        stmt = select(self.model).where(expression).limit(1)
-        return (await db.exec(stmt)).one_or_none()
+        return await db.scalar(select(self.model).where(expression).limit(1))
 
     async def update(
         self,
         db: AsyncSession,
-        obj: SQLModel,
+        obj: Base,
         update_data: dict,
         need_refresh: bool = False,
-    ) -> tuple[SQLModel, None] | tuple[None, str]:
+    ) -> tuple[Base, None] | tuple[None, str]:
         """Update object in the database.
 
         #### Args:
         - db (AsyncSession):
             Connecting to the database.
-        - obj (SQLModel):
+        - obj (Base):
             Object in database.
         - update_data (dict):
             Data for update.
@@ -149,17 +146,18 @@ class CRUD:
             Whether to fetch fresh data from the database.
 
         #### Returns:
-        - tuple[SQLModel, None] | tuple[None, str]:
-            (SQLModel, None) if the save is successful.
+        - tuple[Base, None] | tuple[None, str]:
+            (Base, None) if the save is successful.
             (None, error description) if the save is not successful.
         """
-        is_update = False
-        for key, value in update_data.items():
-            if key in obj.__fields__:
-                is_update = True
-                setattr(obj, key, value)
-        if not is_update:
+        await db.execute(
+            update(self.model)
+            .where(self.model.id == obj.id)
+            .values(update_data)
+        )
+        await db.commit()
+        if not need_refresh:
             return obj, None
 
-        db.add(obj)
-        return await self.save(db, obj, need_refresh)
+        await db.refresh(obj)
+        return obj, None

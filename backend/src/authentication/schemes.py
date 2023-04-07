@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, validator
 
 from src.core.enums import UserType
-from src.core.mixins import EmailScheme, PasswordScheme, UserTypeScheme
+from src.core.mixins.shemes import EmailScheme, PasswordScheme, UserTypeScheme
 
 
 class BaseAuthScheme(EmailScheme, UserTypeScheme):
@@ -63,4 +63,16 @@ class TokenDataScheme(BaseAuthScheme):
         User's email.
     - user_type (int):
         UserType.
+    """
+
+
+class ResponseAuthScheme(BaseAuthScheme):
+    """Scheme for data of parent for issuing to the outside.
+    #### Attrs:
+    - email (str):
+        User's email.
+    - user_type (int): Default `1`.
+        UserType.
+    - password (str):
+        Password for authorization.
     """

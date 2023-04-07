@@ -1,7 +1,7 @@
 from typing import Any
 from uuid import uuid4
 
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from src.config import Limits, RedisPrefixes
 from src.db.postgres.crud import CRUD
@@ -129,7 +129,7 @@ class AuthCrud(CRUD):
     async def create(
         self,
         db: AsyncSession,
-        new_obj: TempUserModel,
+        new_obj: dict,
         is_active: bool = False,
         need_refresh: bool = False,
     ) -> tuple[AuthModel, None] | tuple[None, str]:
@@ -138,7 +138,7 @@ class AuthCrud(CRUD):
         #### Args:
         - db (AsyncSession):
             Connecting to the database.
-        - new_obj (TempUserModel):
+        - new_obj (dict):
             User data to save to the database.
         - is_active (bool): Default False.
             Is the user activated.
@@ -150,7 +150,7 @@ class AuthCrud(CRUD):
             (AuthModel, None) if the save is successful.
             (None, error description) if the save is not successful.
         """
-        db_obj = self.model.from_orm(new_obj)
+        db_obj: AuthModel = self.model(**new_obj)
         db_obj.is_active = is_active
         return await self.save(db, db_obj, need_refresh)
 

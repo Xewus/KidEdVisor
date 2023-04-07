@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from src.db.postgres.database import get_db
 

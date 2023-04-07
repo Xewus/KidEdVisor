@@ -1,21 +1,20 @@
 from fastapi import Depends
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy.ext.asyncio.session import AsyncSession
 
-from src.authentication.models import AuthModel
 from src.authentication.schemes import TokenDataScheme
 from src.authentication.security import get_token_data
 from src.core.exceptions import CredentialsException
 from src.db.postgres.database import get_db
 
-from .crud import parent_crud
-from .models import ParentModel
+from .parents.crud import parent_crud
+from .parents.models import ParentModel
 
 
-async def get_token_parent_auth(
+async def get_token_parent(
     db: AsyncSession = Depends(get_db),
     token_data: TokenDataScheme = Depends(get_token_data),
-) -> tuple[ParentModel, AuthModel]:
-    """Get parent by `JWT` token. Extended by `AuthModel`.
+) -> ParentModel:
+    """Get parent by `JWT` token.
 
     #### Args:
     - db (AsyncSession):
@@ -25,16 +24,13 @@ async def get_token_parent_auth(
 
     #### Raises:
     - CredentialsException:
-        The token is invalid.
+        The token is invalid or parent is not active.
 
     #### Returns:
-    - tuple[ParentModel, AuthModel]:
-        The parent and auth objects.
+    - ParentModel:
+        The parent objects.
     """
-    parent_auth = await parent_crud.get_with_auth_by_email(
-        db, token_data.email, True
-    )
-    if parent_auth is None:
+    parent = await parent_crud.get_active_parent(db, token_data.email)
+    if parent is None:
         raise CredentialsException
-
-    return parent_auth
+    return parent

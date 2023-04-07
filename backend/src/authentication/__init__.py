@@ -5,4 +5,5 @@ databases and utilities.
 Imports from other modules are strictly prohibited in order to avoid problems
 when extending the application.
 """
-from .router import router as auth_router  # noqa
+from .models import AuthModel  # noqa F401
+from .router import router as auth_router  # noqa F401

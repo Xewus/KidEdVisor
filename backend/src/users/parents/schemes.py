@@ -1,7 +1,6 @@
-from pydantic import Field, validator
+from pydantic import validator
 
-from src.config import Limits
-from src.core.mixins import HumanScheme
+from src.core.mixins.shemes import HumanScheme
 from src.core.validators import is_adult_validator
 
 
@@ -30,7 +29,7 @@ class CreateParentScheme(BaseParentScheme):
         Real parent's last name.
     - patronic: (str | None):
         Real parent's patronic name.
-    - born: (date | None):
+    - born: (int | None):
         Parent's date of birth as UNIX time.
     """
 
@@ -43,6 +42,23 @@ class CreateParentScheme(BaseParentScheme):
         return value.title()
 
 
+class UpdateParentScheme(CreateParentScheme):
+    """Scheme for updating parent data.
+
+    #### Attrs:
+    - email (str):
+        Parent's email.
+    - name: (str | None):
+        Real parent's name.
+    - surname: (str | None):
+        Real parent's last name.
+    - patronic: (str | None):
+        Real parent's patronic name.
+    - born: (int | None):
+        Parent's date of birth as UNIX time.
+    """
+
+
 class ResponseParentScheme(BaseParentScheme):
     """Scheme for data of parent for issuing to the outside.
 
@@ -53,33 +69,9 @@ class ResponseParentScheme(BaseParentScheme):
         Real parent's last name.
     - patronic: (str | None):
         Real parent's patronic name.
-    - born: (date | None):
+    - born: (int | None):
         Parent's date of birth as UNIX time.
-    - email (str | None):
-        Parent's email.
     """
 
-
-class ResponseParentAuthScheme(BaseParentScheme):
-    """Scheme for data of parent for issuing to the outside.
-
-    #### Attrs:
-    - name: (str | None):
-        Real parent's name.
-    - surname: (str | None):
-        Real parent's last name.
-    - patronic: (str | None):
-        Real parent's patronic name.
-    - born: (date | None):
-        Parent's date of birth as UNIX time.
-    - email (str):
-        Parent's email.
-    """
-
-    email: str = Field(
-        max_length=Limits.MAX_LEN_EMAIL,
-    )
-
-
-class UpdateParentScheme(CreateParentScheme):
-    """Scheme for updating parent data."""
+    class Config:
+        orm_mode = True
