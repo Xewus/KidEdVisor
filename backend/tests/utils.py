@@ -128,7 +128,7 @@ class Docker:
             container.wait()
         return None
 
-    def run_all(self) -> None:
+    async def run_all(self) -> None:
         """Run all containers associated with the `Doker` instance."""
         self.stop_all()
         self._run_postgres()

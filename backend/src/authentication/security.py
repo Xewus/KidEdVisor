@@ -17,7 +17,7 @@ from src.core.exceptions import (
     ForbiddenException,
     NoAdminException,
 )
-from src.db.postgres.database import get_db, postgres_dsn
+from src.db.postgres.database import get_db, postgres_url
 
 from .crud import auth_crud
 from .models import AuthModel
@@ -175,7 +175,7 @@ def get_hash_password(password: str) -> str:
 
 async def admin_always_exists() -> None:
     """Create admin if it not exists."""
-    dsn = postgres_dsn.replace("+asyncpg", "")
+    dsn = postgres_url.replace("+asyncpg", "")
     try:
         conn: Connection = await asyncpg.connect(dsn)
         admin = await conn.fetchrow(

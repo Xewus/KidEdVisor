@@ -21,7 +21,7 @@ class IDTable:
         Primary key for table.
     """
 
-    id: Mapped[int | None] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
 
 
 postgres_url = postgres_dsn(
@@ -64,7 +64,7 @@ async def check_postgres() -> None:
         No connection to PostgreSQL.
     """
     try:
-        dsn = postgres_dsn.replace("+asyncpg", "")
+        dsn = postgres_url.replace("+asyncpg", "")
         conn: Connection = await asyncpg.connect(dsn)
         await conn.execute("SELECT 1;")
         await conn.close()

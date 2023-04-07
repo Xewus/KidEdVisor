@@ -77,8 +77,14 @@ def event_loop() -> Generator[AbstractEventLoop, None, None]:
 
 
 @pytest.fixture(scope="session")
-def databases_and_migrations() -> Generator[None, None, None]:
-    """Create databases for tests andapply migrations.
+def databases_and_migrations(
+    event_loop: AbstractEventLoop,
+) -> Generator[None, None, None]:
+    """Create databases for tests andapply migrations..
+
+    #### Args:
+    - event_loop (AbstractEventLoop):
+        Event loop for tests.
 
     #### Yields:
     - None
@@ -89,8 +95,8 @@ def databases_and_migrations() -> Generator[None, None, None]:
         postgres_user=POSTGRES_USER,
         postgres_password=POSTGRES_PASSWORD,
     )
-    docker.run_all()
-    sleep(1)
+    event_loop.run_until_complete(docker.run_all())
+    sleep(0.3)
     config = Config("alembic.ini")
     command.upgrade(config, "head")
 

@@ -55,7 +55,7 @@ class AppSettings(BaseSettings):
     google_email: EmailStr = "example@gmail.com"
     google_smtp_password: SecretStr = "app_key"
 
-    admin_email: EmailStr = "admin@admin.qq"
+    admin_email: EmailStr = "admin@yahoo.com"
     admin_password: SecretStr = "12345678"
 
     class Config:
