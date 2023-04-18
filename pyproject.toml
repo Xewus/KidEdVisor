@@ -11,3 +11,7 @@ addopts = "-vv -p no:cacheprovider --disable-warnings"
 testpaths = ["tests/"]
 python_files = ["test_*.py"]
 asyncio_mode= "auto"
+
+[tool.bandit]
+exclude_dirs = ["tests"]
+skips = ["B105"]

@@ -1,0 +1,4 @@
+#!/bin/bash
+cd infra/
+set COMPOSE=1
+docker-compose up --build

@@ -1,11 +1,10 @@
 from typing import Any
 from uuid import uuid4
 
-from sqlalchemy.ext.asyncio.session import AsyncSession
-
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.config import Limits, RedisPrefixes
-from src.db.postgres.crud import CRUD
-from src.db.redis.database import auth_db
+from src.db.postgres import CRUD
+from src.db.redis import auth_db
 
 from .models import AuthModel, TempUserModel
 from .schemes import CreateTempUserScheme

@@ -1,24 +1,23 @@
-from sqlalchemy import Integer
+from sqlalchemy import ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column
-
 from src.core.enums import TableNames
-from src.core.mixins.models import HumanTable
-from src.db.postgres.database import Base
+from src.core.mixins import HumanModel
+from src.db.postgres import Base
 
 
-class OwnerModel(Base, HumanTable):
+class OwnerModel(Base, HumanModel):
     """Table for owner data.
 
     #### Attrs:
     - id (int):
-        Identifier.    #### Attrs:
-    - name: (str | None):
+        Identifier.
+    - name (str | None):
         Real user's name.
-    - surname: (str | None):
+    - surname (str | None):
         Real user's last name.
-    - patronic: (str | None):
+    - patronic (str | None):
         Real user's patronic name.
-    - born: (int | None):
+    - born (int | None):
         User's date of birth as UNIX time.
     - auht_id (int | None):
         Relation to athenticated data.
@@ -27,4 +26,22 @@ class OwnerModel(Base, HumanTable):
 
     __tablename__ = TableNames.OWNER
 
-    auth_id: Mapped[int | None] = mapped_column(Integer, default=None)
+    auth_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey(TableNames.AUTH + ".id", ondelete="SET DEFAULT"),
+        default=None,
+    )
+
+
+class OwnerAddressModel(Base):
+    __tablename__ = TableNames.OWNER_ADDRESS
+
+    owner_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey(TableNames.OWNER + ".id"),
+    )
+    address_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey(TableNames.ADDRESS + ".id"),
+        default=None,
+    )

@@ -1,3 +1,5 @@
+from typing import Generator
+
 import asyncpg
 from asyncpg.connection import Connection
 from sqlalchemy import Integer
@@ -8,7 +10,6 @@ from sqlalchemy.orm import (
     mapped_column,
     sessionmaker,
 )
-
 from src.config import settings
 from src.core.utils import postgres_dsn
 
@@ -34,6 +35,7 @@ postgres_url = postgres_dsn(
 
 Base = declarative_base(cls=IDTable)
 
+
 aengine = create_async_engine(
     url=postgres_url,
     echo=settings.debug,
@@ -50,7 +52,7 @@ ASessionMaker = sessionmaker(
 )
 
 
-async def get_db() -> AsyncSession:
+async def get_db() -> Generator[AsyncSession, None, None]:
     """Get connection to the Postgres."""
     async with ASessionMaker() as session:
         yield session

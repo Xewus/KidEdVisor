@@ -3,6 +3,7 @@ from typing import Callable
 
 import docker
 from docker.models.containers import Container
+from src.core.enums import UserType
 
 
 class Storage:
@@ -14,24 +15,24 @@ class Storage:
 class Users:
     """Samples of different types of users."""
 
-    user_1 = {
+    parent_1 = {
         "email": "user1@mail.ru",
         "password": "password1",
     }
-    user_2 = {
+    parent_2 = {
         "email": "user2@mail.ru",
         "password": "password2",
-        "user_type": 1,
+        "user_type": UserType.PARENT,
     }
     owner_1 = {
         "email": "teacher1@gmail.com",
         "password": "password1",
-        "user_type": 2,
+        "user_type": UserType.OWNER,
     }
     owner_2 = {
         "email": "teacher2@gmail.com",
         "password": "password2",
-        "user_type": 2,
+        "user_type": UserType.OWNER,
     }
 
 
@@ -68,6 +69,12 @@ class Docker:
             if container.name == redis_name or container.name == postgres_name:
                 container.stop()
                 container.wait()
+
+    def __enter__(self) -> None:
+        self.run_all()
+
+    def __exit__(self, *_) -> None:
+        self.stop_all()
 
     def _check_running_container(self, container: Container) -> None:
         """Make sure the container status is running.
@@ -128,7 +135,7 @@ class Docker:
             container.wait()
         return None
 
-    async def run_all(self) -> None:
+    def run_all(self) -> None:
         """Run all containers associated with the `Doker` instance."""
         self.stop_all()
         self._run_postgres()

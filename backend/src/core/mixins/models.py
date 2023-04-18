@@ -1,20 +1,19 @@
 from sqlalchemy import BigInteger, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
-
 from src.config import Limits
 
 
-class HumanTable:
+class HumanModel:
     """The mixin for creating user models.
 
     #### Attrs:
-    - name: (str | None):
+    - name (str | None):
         Real user's name.
-    - surname: (str | None):
+    - surname (str | None):
         Real user's last name.
-    - patronic: (str | None):
+    - patronic (str | None):
         Real user's patronic name.
-    - born: (int | None):
+    - born (int | None):
         User's date of birth as UNIX time.
     """
 
@@ -36,7 +35,7 @@ class HumanTable:
     )
 
 
-class EmailTable:
+class EmailModel:
     """The mixin for creating email contact models.
 
     #### Attrs:
@@ -52,15 +51,17 @@ class EmailTable:
     )
 
 
-class PhoneNumberTable:
+class PhoneNumberModel:
     """Specifies column type as `int8` for Postgres.
 
     #### Attrs:
-    - phone_number (int):
+    - number (int):
         Big integer (int64) field.
     """
 
-    phone_number: Mapped[int] = mapped_column(
+    number: Mapped[int] = mapped_column(
         BigInteger,
-        default=None,
+        unique=True,
+        index=True,
+        nullable=False,
     )

@@ -1,7 +1,6 @@
 """Insert this into first migration.
 """
 from alembic import op
-
 from src.core.enums import TableNames, UserType
 
 

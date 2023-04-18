@@ -5,7 +5,6 @@ from email_validator import (
     EmailUndeliverableError,
     validate_email,
 )
-
 from src.config import Limits
 
 from .exceptions import BadRequestException

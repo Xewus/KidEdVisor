@@ -1,19 +1,10 @@
 from typing import Callable
 
-from fastapi import (
-    APIRouter,
-    BackgroundTasks,
-    Depends,
-    Path,
-    Query,
-    Request,
-    status,
-)
+from fastapi import APIRouter, BackgroundTasks, Depends, Path, Request, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio.session import AsyncSession
-
 from src.config import Limits
-from src.core.enums import RouteTags
+from src.core.enums import AppPaths, RouteTags
 from src.core.exceptions import (
     BadRequestException,
     ForbiddenException,
@@ -21,37 +12,24 @@ from src.core.exceptions import (
     UnprocessableEntityException,
 )
 from src.core.utils import random_string
-from src.db.postgres.database import get_db
+from src.db.postgres import get_db
 from src.mail import get_send_confirm_link
 
 from .crud import auth_crud, temp_crud
 from .forms import EmailForm, Oauth2EmailForm, PasswordForm
 from .models import AuthModel
-from .schemes import (
-    CreateTempUserScheme,
-    PasswordScheme,
-    ResponseAuthScheme,
-    TokenScheme,
-)
+from .schemes import CreateTempUserScheme, PasswordScheme, TokenScheme
 from .security import (
     authenticate_user,
     create_JWT_token,
-    get_admin_user,
     get_hash_password,
     get_token_user,
 )
 
-router = APIRouter()
-
-auth_router = APIRouter()
-
-admin_router = APIRouter(
-    tags=[RouteTags.ADMIN],
-    dependencies=(Depends(get_admin_user),),
-)
+router = APIRouter(prefix=AppPaths.AUTH, tags=[RouteTags.AUTH])
 
 
-@auth_router.post(
+@router.post(
     path="/registration",
     summary="Registration a new user",
     description="User data is temporarily saved. "
@@ -80,7 +58,7 @@ async def registration(
     return link  # for development. return None
 
 
-@auth_router.get(
+@router.get(
     path="/confirm/{uuid}",
     name="confirm_registration",
     summary="User registration confirmation",
@@ -110,8 +88,8 @@ async def confirm_registration(
     return RedirectResponse(request.base_url)
 
 
-@auth_router.post(
-    path="/token",
+@router.post(
+    path=AppPaths.TOKEN,
     summary="Get authorization token",
     description="User submits form with email password, user type and "
     "gets `JWT` token",
@@ -121,12 +99,13 @@ async def login(
     db: AsyncSession = Depends(get_db),
     form: Oauth2EmailForm = Depends(),
 ):
+    print(form)
     user = await authenticate_user(db, form.email, form.password)
     data = {"sub": user.email, "ut": user.user_type}
     return TokenScheme(access_token=create_JWT_token(data))
 
 
-@auth_router.post(
+@router.post(
     path="/change_password",
     summary="Change password",
     description="The authorized user submits a form with a new password.",
@@ -147,7 +126,7 @@ async def request_change_password(
     return None
 
 
-@auth_router.post(
+@router.post(
     path="/forget_password",
     summary="Get a link to create a new password",
     description="The user specifies registration email address and "
@@ -175,7 +154,7 @@ async def forget_password(
     return link  # for development. return None
 
 
-@auth_router.get(
+@router.get(
     path="/forget_password/{uuid}",
     name="get_new_password",
     summary="Get new password",
@@ -214,27 +193,3 @@ async def get_new_password(
         raise UnprocessableEntityException("please try again")
 
     return {"password": new_password}
-
-
-@admin_router.get(
-    path="/all",
-    summary="Get all users",
-    description="Access for admin only",
-    response_model=list[ResponseAuthScheme],
-)
-async def get_all_auths(
-    db: AsyncSession = Depends(get_db),
-    offset: int | None = 0,
-    limit: int | None = Query(default=10, le=50),
-    is_actve: bool | None = None,
-):
-    if is_actve is None:
-        return await auth_crud.get_many(db, offset, limit)
-
-    return await auth_crud.get_many(
-        db, offset, limit, AuthModel.is_active == is_actve
-    )
-
-
-router.include_router(auth_router)
-router.include_router(admin_router)

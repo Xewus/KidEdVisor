@@ -1,5 +1,5 @@
 from redis import Redis
-
+from redis.exceptions import ConnectionError
 from src.config import settings
 
 
@@ -41,5 +41,9 @@ def check_redis() -> None:
         No connection to Redis.
     """
     if not default_db.ping():
+        raise ConnectionError("\n\n\033[101mNo connection to Redis!\033[0m\n")
+    if not auth_db.ping():
+        raise ConnectionError("\n\n\033[101mNo connection to Redis!\033[0m\n")
+    if not cache_db.ping():
         raise ConnectionError("\n\n\033[101mNo connection to Redis!\033[0m\n")
     return None
