@@ -1,7 +1,6 @@
 from pydantic import BaseModel, Field, validator
-
 from src.core.enums import UserType
-from src.core.mixins.shemes import EmailScheme, PasswordScheme, UserTypeScheme
+from src.core.mixins import EmailScheme, PasswordScheme, UserTypeScheme
 
 
 class BaseAuthScheme(EmailScheme, UserTypeScheme):
@@ -11,7 +10,7 @@ class BaseAuthScheme(EmailScheme, UserTypeScheme):
     - email (str):
         User's email.
     - user_type (int): Default `1`.
-        UserType.
+        Type of user.
     """
 
 
@@ -22,7 +21,7 @@ class CreateTempUserScheme(BaseAuthScheme, PasswordScheme):
     - email (str):
         User's email.
     - user_type (int): Default `1`.
-        UserType.
+        Type of user.
     - password (str):
         Password for authorization.
     """
@@ -36,6 +35,10 @@ class CreateTempUserScheme(BaseAuthScheme, PasswordScheme):
             raise ValueError("This user type does not exist")
 
         return user_type
+
+    @validator("email")
+    def email_to_lower(cls, email: str) -> str:
+        return email.lower()
 
 
 class TokenScheme(BaseModel):
@@ -62,7 +65,7 @@ class TokenDataScheme(BaseAuthScheme):
     - email (str):
         User's email.
     - user_type (int):
-        UserType.
+        Type of user.
     """
 
 
@@ -71,8 +74,14 @@ class ResponseAuthScheme(BaseAuthScheme):
     #### Attrs:
     - email (str):
         User's email.
-    - user_type (int): Default `1`.
-        UserType.
-    - password (str):
-        Password for authorization.
+    - user_type (int):
+        Type of user.
     """
+
+    user_type: int = Field(
+        title="User's type",
+        description="There are 2 params: user:`1`, owner:`2`",
+    )
+
+    class Config:
+        orm_mode = True

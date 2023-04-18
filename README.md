@@ -6,6 +6,23 @@
 
 
 ### `For backenders`
+
+First you need to get application keys from `Google.Mail` and `Yandex.Map`.
+
+## With docker-compose
+
+Create and populate a `.envcompose` file like `.env.example`
+```
+cd /infra
+```
+```
+docker-compose up --build
+```
+Open in browser:
+```
+http://127.0.0.1/
+```
+
 ## Without docker-compose
 First you need Postgres and Redis on your machine.
 
@@ -87,7 +104,7 @@ Install requirements.
 
 For LINUX:
 ```
-pip install -U pip && pip install -r requirements.txt
+pip install -U pip && pip install -r backend/requirements.txt
 ```
 For WINDOWS:
 ```
@@ -111,3 +128,16 @@ Run the application:
 uvicorn src.main:app --reload
 ```
 `Then you can continue development.`
+
+## With docker-compose
+(*of course, you must first have `Docker`*)
+
+Create a `.envcompose` file similar to [`.envexample`](https://github.com/Xewus/KidEdVisor/blob/geo/.env.example).
+
+Then just a couple of commands:
+```
+chmod +x start_app_with_compose
+```
+```
+./start_app_with_compose
+```

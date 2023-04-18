@@ -1,4 +1,4 @@
-from src.core.mixins.shemes import HumanScheme
+from src.core.mixins import HumanScheme
 
 
 class BaseTeacherScheme(HumanScheme):

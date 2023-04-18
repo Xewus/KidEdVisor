@@ -1,5 +1,4 @@
 from fastapi import Form
-
 from src.config import Limits
 from src.core.validators import email_validator, password_validator
 

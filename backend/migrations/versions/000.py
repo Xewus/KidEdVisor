@@ -1,17 +1,16 @@
 """000
 
-Revision ID: 236616f8ecd1
+Revision ID: cdc20c22af6a
 Revises:
-Create Date: 2023-04-07 21:07:35.219511
+Create Date: 2023-04-16 18:07:44.587541
 
 """
 import sqlalchemy as sa
 from alembic import op
-
 from src.core.enums import TableNames, UserType
 
 # revision identifiers, used by Alembic.
-revision = "236616f8ecd1"
+revision = "cdc20c22af6a"
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -30,6 +29,23 @@ def upgrade() -> None:
     )
     op.create_index(op.f("ix_auth_email"), "auth", ["email"], unique=True)
     op.create_table(
+        "category",
+        sa.Column("name", sa.String(length=32), nullable=False),
+        sa.Column("description", sa.String(length=64), nullable=False),
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index(
+        op.f("ix_category_name"), "category", ["name"], unique=True
+    )
+    op.create_table(
+        "country",
+        sa.Column("name", sa.String(length=64), nullable=False),
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index(op.f("ix_country_name"), "country", ["name"], unique=True)
+    op.create_table(
         "owner",
         sa.Column("auth_id", sa.Integer(), nullable=True),
         sa.Column("id", sa.Integer(), nullable=False),
@@ -37,6 +53,9 @@ def upgrade() -> None:
         sa.Column("surname", sa.String(length=128), nullable=True),
         sa.Column("patronic", sa.String(length=128), nullable=True),
         sa.Column("born", sa.Integer(), nullable=True),
+        sa.ForeignKeyConstraint(
+            ["auth_id"], ["auth.id"], ondelete="SET DEFAULT"
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
@@ -47,14 +66,51 @@ def upgrade() -> None:
         sa.Column("surname", sa.String(length=128), nullable=True),
         sa.Column("patronic", sa.String(length=128), nullable=True),
         sa.Column("born", sa.Integer(), nullable=True),
+        sa.ForeignKeyConstraint(
+            ["auth_id"], ["auth.id"], ondelete="SET DEFAULT"
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
-        "institution",
-        sa.Column("owner_id", sa.Integer(), nullable=True),
+        "region",
+        sa.Column("country_id", sa.Integer(), nullable=True),
         sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("name", sa.String(length=64), nullable=False),
         sa.ForeignKeyConstraint(
-            ["owner_id"], ["owner.id"], ondelete="SET DEFAULT"
+            ["country_id"],
+            ["country.id"],
+        ),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_table(
+        "city",
+        sa.Column("country_id", sa.Integer(), nullable=True),
+        sa.Column("region_id", sa.Integer(), nullable=True),
+        sa.Column("district_id", sa.Integer(), nullable=True),
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("name", sa.String(length=64), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["country_id"],
+            ["country.id"],
+        ),
+        sa.ForeignKeyConstraint(
+            ["district_id"],
+            ["region.id"],
+        ),
+        sa.ForeignKeyConstraint(
+            ["region_id"],
+            ["region.id"],
+        ),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_table(
+        "district",
+        sa.Column("region_id", sa.Integer(), nullable=True),
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("name", sa.String(length=64), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["region_id"],
+            ["region.id"],
         ),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -67,6 +123,81 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
     )
+    op.create_table(
+        "street",
+        sa.Column("city_id", sa.Integer(), nullable=True),
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("name", sa.String(length=64), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["city_id"],
+            ["city.id"],
+        ),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_table(
+        "address",
+        sa.Column("city_id", sa.Integer(), nullable=True),
+        sa.Column("street_id", sa.Integer(), nullable=True),
+        sa.Column("building", sa.String(length=16), nullable=True),
+        sa.Column("adds", sa.String(length=16), nullable=True),
+        sa.Column("office", sa.String(length=16), nullable=True),
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["city_id"],
+            ["city.id"],
+        ),
+        sa.ForeignKeyConstraint(
+            ["street_id"],
+            ["street.id"],
+        ),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_table(
+        "institution",
+        sa.Column("name", sa.String(length=128), nullable=False),
+        sa.Column("description", sa.String(), nullable=False),
+        sa.Column("site", sa.String(length=256), nullable=True),
+        sa.Column("address_id", sa.Integer(), nullable=False),
+        sa.Column("owner_id", sa.Integer(), nullable=True),
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["address_id"],
+            ["address.id"],
+        ),
+        sa.ForeignKeyConstraint(
+            ["owner_id"], ["owner.id"], ondelete="SET DEFAULT"
+        ),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_table(
+        "owner_address",
+        sa.Column("owner_id", sa.Integer(), nullable=True),
+        sa.Column("address_id", sa.Integer(), nullable=True),
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["address_id"],
+            ["address.id"],
+        ),
+        sa.ForeignKeyConstraint(
+            ["owner_id"],
+            ["owner.id"],
+        ),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_table(
+        "phone",
+        sa.Column("address_id", sa.Integer(), nullable=False),
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("number", sa.BigInteger(), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["address_id"], ["address.id"], ondelete="CASCADE"
+        ),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index(
+        op.f("ix_phone_address_id"), "phone", ["address_id"], unique=False
+    )
+    op.create_index(op.f("ix_phone_number"), "phone", ["number"], unique=True)
     # ### end Alembic commands ###
     # trigger for postgresql
     op.execute(
@@ -101,10 +232,23 @@ def downgrade() -> None:
     op.execute("DROP FUNCTION insert_other_table();")
 
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_table("teacher")
+    op.drop_index(op.f("ix_phone_number"), table_name="phone")
+    op.drop_index(op.f("ix_phone_address_id"), table_name="phone")
+    op.drop_table("phone")
+    op.drop_table("owner_address")
     op.drop_table("institution")
+    op.drop_table("address")
+    op.drop_table("street")
+    op.drop_table("teacher")
+    op.drop_table("district")
+    op.drop_table("city")
+    op.drop_table("region")
     op.drop_table("parent")
     op.drop_table("owner")
+    op.drop_index(op.f("ix_country_name"), table_name="country")
+    op.drop_table("country")
+    op.drop_index(op.f("ix_category_name"), table_name="category")
+    op.drop_table("category")
     op.drop_index(op.f("ix_auth_email"), table_name="auth")
     op.drop_table("auth")
     # ### end Alembic commands ###

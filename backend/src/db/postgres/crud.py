@@ -2,7 +2,6 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from sqlalchemy.sql.elements import BinaryExpression
-
 from src.config import Limits
 from src.db.postgres.database import Base
 
@@ -105,7 +104,7 @@ class CRUD:
         stmt = select(self.model).offset(offset).limit(limit)
         if expression is not None:
             stmt = stmt.where(expression)
-        return await db.scalars(stmt)
+        return (await db.scalars(stmt)).all()
 
     async def get(
         self,

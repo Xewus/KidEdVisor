@@ -6,13 +6,15 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse, RedirectResponse
-
-from src.api import api_router
+from src.api_v1 import api_v1_router
+from src.authentication import auth_router
 from src.authentication.security import admin_always_exists
 from src.config import settings
+from src.core.enums import AppPaths
 from src.core.utils import change_openapi_schema
 from src.db.postgres.database import check_postgres
 from src.db.redis.database import check_redis
+from src.geo.utils import countries_always_exists
 
 load_dotenv(".env")
 
@@ -23,9 +25,14 @@ app = FastAPI(
     version=settings.app_version,
 )
 
+
 app.include_router(
-    router=api_router,
-    prefix=settings.api_v1_prefix,
+    router=auth_router,
+    prefix=AppPaths.API,
+)
+app.include_router(
+    router=api_v1_router,
+    prefix=AppPaths.API,
 )
 
 
@@ -78,6 +85,7 @@ async def start_up():
         check_redis()
         await check_postgres()
         await admin_always_exists()
+        await countries_always_exists()
 
 
 @app.get(

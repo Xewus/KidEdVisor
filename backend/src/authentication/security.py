@@ -1,29 +1,21 @@
 from time import time
 
-import asyncpg
-from asyncpg.connection import Connection
-from asyncpg.exceptions import DataError, UniqueViolationError
 from fastapi import Depends
 from fastapi.security.oauth2 import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from sqlalchemy.ext.asyncio.session import AsyncSession
-
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.config import Limits, settings
 from src.core.enums import AppPaths, UserType
-from src.core.exceptions import (
-    BadRequestException,
-    CredentialsException,
-    ForbiddenException,
-    NoAdminException,
-)
-from src.db.postgres.database import get_db, postgres_url
+from src.core.exceptions import BadRequestException, CredentialsException
+from src.db.postgres.database import ASessionMaker, get_db
 
 from .crud import auth_crud
 from .models import AuthModel
 from .schemes import TokenDataScheme
 
-token_url = f"{settings.api_v1_prefix}{AppPaths.AUTHENTICATION}/token"
+token_url = f"{AppPaths.API}{AppPaths.AUTH}{AppPaths.TOKEN}"
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=token_url)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -52,6 +44,7 @@ async def authenticate_user(
         The user object from the database if the password matches else None.
     """
     user: AuthModel = await auth_crud.get(db, AuthModel.email == email)
+    print(email, user)
     if user is None or not user.is_active:
         raise BadRequestException(f"user with email: {email} not found")
 
@@ -136,29 +129,6 @@ async def get_token_user(
     return user
 
 
-async def get_admin_user(
-    user: AuthModel = Depends(get_token_user),
-) -> AuthModel:
-    """Get the user if it is not deactivated and is admin.
-
-    #### Args:
-    - user (AuthModel):
-        The user object from the database.
-
-    #### Raises:
-    - NotActiveUserException:
-        The user is not admin.
-
-    #### Returns:
-    - AuthModel:
-        The user object from the database.
-    """
-    if user.user_type != UserType.ADMIN:
-        raise ForbiddenException
-
-    return user
-
-
 def get_hash_password(password: str) -> str:
     """Get a hash from a password.
 
@@ -174,40 +144,25 @@ def get_hash_password(password: str) -> str:
 
 
 async def admin_always_exists() -> None:
-    """Create admin if it not exists."""
-    dsn = postgres_url.replace("+asyncpg", "")
-    try:
-        conn: Connection = await asyncpg.connect(dsn)
-        admin = await conn.fetchrow(
-            """
-        SELECT id
-        FROM auth
-        WHERE user_type = $1
-        """,
-            UserType.ADMIN,
-        )
-        if admin is not None:
-            return
+    """Create an admin if it doesn't exist."""
+    async with ASessionMaker() as db:
+        db: AsyncSession
+        if await db.scalar(
+            select(AuthModel.id)
+            .where(AuthModel.user_type == UserType.ADMIN)
+            .limit(1)
+        ):
+            return None
 
-        email = settings.admin_email
         password = get_hash_password(
             settings.admin_password.get_secret_value()
         )
-        await conn.execute(
-            """
-        INSERT INTO auth(email, password, user_type, is_active)
-        VALUES ($1, $2, $3, $4)
-        """,
-            email,
-            password,
-            UserType.ADMIN,
-            True,
+        admin = AuthModel(
+            email=settings.admin_email,
+            is_active=True,
+            user_type=UserType.ADMIN,
+            password=password,
         )
-    except (DataError, UniqueViolationError) as err:
-        raise NoAdminException(
-            "\n\n\033[101mThere is no admins for management application!\n"
-            f"{err}\033[0m"
-        )
-
-    finally:
-        await conn.close()
+        db.add(admin)
+        await db.commit()
+        return None

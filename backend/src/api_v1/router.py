@@ -1,21 +1,21 @@
 from fastapi import APIRouter
-
-from src.authentication import auth_router
+from src.admin import admin_router
 from src.core.enums import AppPaths, RouteTags
+from src.parents import parents_router
 from src.providers import providers_router
-from src.users import users_router
 
-router = APIRouter()
+router = APIRouter(prefix=AppPaths.V1)
+
 
 router.include_router(
-    router=auth_router,
-    prefix=AppPaths.AUTHENTICATION,
-    tags=(RouteTags.AUTH,),
+    router=admin_router,
+    prefix=AppPaths.ADMINS,
+    tags=(RouteTags.ADMINS,),
 )
 router.include_router(
-    router=users_router,
-    prefix=AppPaths.USERS,
-    tags=(RouteTags.USERS,),
+    router=parents_router,
+    prefix=AppPaths.PARENTS,
+    tags=(RouteTags.PARENTS,),
 )
 router.include_router(
     router=providers_router,

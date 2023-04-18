@@ -3,10 +3,6 @@ from typing import Any
 from fastapi import HTTPException, status
 
 
-class NoAdminException(Exception):
-    pass
-
-
 class BadRequestException(HTTPException):
     """Status 400."""
 

@@ -16,8 +16,21 @@ sys.path.append(BASE_ROOT)
 from src.authentication import AuthModel
 from src.core.utils import postgres_dsn
 from src.db.postgres.database import Base
-from src.providers import InstitutionModel, OwnerModel, TeacherModel
-from src.users import ParentModel
+from src.geo import (
+    AddressModel,
+    CityModel,
+    CountryModel,
+    PhoneModel,
+    RegionModel,
+    StreetModel,
+)
+from src.parents import ParentModel
+from src.providers import (
+    CategoryModel,
+    InstitutionModel,
+    OwnerModel,
+    TeacherModel,
+)
 
 load_dotenv(BASE_ROOT / ".env")
 

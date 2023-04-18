@@ -1,11 +1,10 @@
 from pydantic import Field, validator
 from sqlalchemy import Boolean, Column, Integer, String
-
 from src.config import Limits
 from src.core.enums import TableNames, UserType
-from src.core.mixins.models import EmailTable
+from src.core.mixins import EmailModel
 from src.core.validators import email_validator
-from src.db.postgres.database import Base
+from src.db.postgres import Base
 
 from .schemes import CreateTempUserScheme
 
@@ -30,7 +29,7 @@ class TempUserModel(CreateTempUserScheme):
     _good_email = validator("email", allow_reuse=True)(email_validator)
 
 
-class AuthModel(Base, EmailTable):
+class AuthModel(Base, EmailModel):
     """Table for authentication data.
 
     #### Attrs:
@@ -38,10 +37,10 @@ class AuthModel(Base, EmailTable):
         Iidentifier.
     - email (str):
         User's email.
-    - is_active (bool): Default False.
+    - is_active (bool): Default `False`.
         Is the user activated.
-    - user_type (int):
-        UserType.
+    - user_type (int): Default `1`.
+        User's type.
     - password (str):
         Hashed pasword.
     """

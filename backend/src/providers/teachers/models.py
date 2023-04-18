@@ -1,7 +1,6 @@
 from sqlalchemy import Column, ForeignKey, Integer
-
 from src.core.enums import TableNames
-from src.db.postgres.database import Base
+from src.db.postgres import Base
 
 
 class TeacherModel(Base):

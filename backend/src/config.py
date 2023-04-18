@@ -34,7 +34,6 @@ class AppSettings(BaseSettings):
     app_title: str = "Template"
     app_version: str = "0.0.0"
     app_description: str = "FastAPI app"
-    api_v1_prefix: str = "/api/v1"
 
     secret_key: str  # salt for hashing password
     algorithm: str  # algorithm for hashing password
@@ -55,17 +54,31 @@ class AppSettings(BaseSettings):
     google_email: EmailStr = "example@gmail.com"
     google_smtp_password: SecretStr = "app_key"
 
+    ya_map_api_key: str
+
     admin_email: EmailStr = "admin@yahoo.com"
     admin_password: SecretStr = "12345678"
 
     class Config:
         if os.getenv("TESTING"):
             env_file = ".envdev"
+        elif os.getenv("COMPOSE"):
+            env_file = ".envcompose"
         else:
             env_file = ".env"
 
 
 class Limits:
+    MAX_LEN_EMAIL = EMAIL_MAX_LENGTH  # from pydantic [254]
+    MAX_LEN_HTTP_URL = 128
+    MAX_LEN_HASH_PASSWORD = 128
+    # auth
+    CONFIRM_EXPIRE_TIME = MINUTE * 13
+    TOKEN_EXPIRE_TIME = DAY
+
+    DEFAULT_PAGINATION_SIZE = 10
+
+    # parent
     ADULT_AGE = 18 * YEAR + 5 * DAY
     MAX_AGE = 100 * YEAR
 
@@ -79,17 +92,17 @@ class Limits:
     MIN_LEN_PASSWORD = 8
     MAX_LEN_PASSWORD = 32
 
-    MIN_PHONE_NUMBER = 7_900_000_00_00
-    MAX_PHONE_NUMBER = 8_000_000_00_00
+    MIN_PHONE_NUMBER = 10**7
+    MAX_PHONE_NUMBER = 10**14
 
+    # providers
+    MIN_LEN_PROVIDER_NAME = 1
+    MAX_LEN_PROVIDER_NAME = 256
     MAX_LEN_PROVIDER_DESCRIPTION = 512
-    MAX_LEN_EMAIL = EMAIL_MAX_LENGTH  # from pydantic
-    MAX_LEN_HASH_PASSWORD = 128
 
-    CONFIRM_EXPIRE_TIME = MINUTE * 13
-    TOKEN_EXPIRE_TIME = DAY
-
-    DEFAULT_PAGINATION_SIZE = 10
+    # geo
+    DEFAULT_LEN_GEO_NAME = 64
+    LEN_16_GEO_NAME = 16
 
 
 settings = AppSettings()

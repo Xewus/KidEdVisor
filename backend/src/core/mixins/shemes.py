@@ -1,8 +1,11 @@
-from pydantic import BaseModel, EmailStr, Field, validator
-
+from pydantic import BaseModel, EmailStr, Field, HttpUrl, validator
 from src.config import Limits
 from src.core.enums import UserType
 from src.core.validators import password_validator
+
+
+class ShortHttpUrl(HttpUrl):
+    max_length = Limits.MAX_LEN_HTTP_URL
 
 
 class UserTypeScheme(BaseModel):
@@ -10,11 +13,12 @@ class UserTypeScheme(BaseModel):
 
     #### Attrs:
     - user_type (int): Default `1`.
-        UserType.
+        Type of user.
     """
 
     user_type: int | None = Field(
         default=UserType.PARENT.value,
+        title="User's type",
         description="There are 2 params: user:`1`, owner:`2`",
     )
 
@@ -23,13 +27,13 @@ class HumanScheme(BaseModel):
     """The base schema for creating user schemas.
 
     #### Attrs:
-    - name: (str | None):
+    - name (str | None):
         Real user's name.
-    - surname: (str | None):
+    - surname (str | None):
         Real user's last name.
-    - patronic: (str | None):
+    - patronic (str | None):
         Real user's patronic name.
-    - born: (int | None):
+    - born (int | None):
         User's date of birth as UNIX time.
     """
 

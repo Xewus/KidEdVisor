@@ -1,10 +1,8 @@
 from fastapi import Depends
-from sqlalchemy.ext.asyncio.session import AsyncSession
-
-from src.authentication.schemes import TokenDataScheme
-from src.authentication.security import get_token_data
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.authentication import TokenDataScheme, get_token_data
 from src.core.exceptions import CredentialsException
-from src.db.postgres.database import get_db
+from src.db.postgres import get_db
 
 from .parents.crud import parent_crud
 from .parents.models import ParentModel
@@ -28,7 +26,7 @@ async def get_token_parent(
 
     #### Returns:
     - ParentModel:
-        The parent objects.
+        The parent object.
     """
     parent = await parent_crud.get_active_parent(db, token_data.email)
     if parent is None:

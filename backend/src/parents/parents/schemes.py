@@ -1,6 +1,5 @@
 from pydantic import validator
-
-from src.core.mixins.shemes import HumanScheme
+from src.core.mixins import HumanScheme
 from src.core.validators import is_adult_validator
 
 
@@ -46,8 +45,6 @@ class UpdateParentScheme(CreateParentScheme):
     """Scheme for updating parent data.
 
     #### Attrs:
-    - email (str):
-        Parent's email.
     - name: (str | None):
         Real parent's name.
     - surname: (str | None):

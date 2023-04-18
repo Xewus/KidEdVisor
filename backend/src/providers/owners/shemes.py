@@ -1,7 +1,6 @@
 from pydantic import Field, validator
-
 from src.config import Limits
-from src.core.mixins.shemes import EmailScheme, HumanScheme
+from src.core.mixins import HumanScheme
 from src.core.validators import is_adult_validator
 
 
@@ -9,13 +8,13 @@ class BaseOwnerScheme(HumanScheme):
     """The base schema for owner schemas.
 
     #### Attrs:
-    - name: (str | None):
+    - name (str | None):
         Real owner's name.
-    - surname: (str | None):
+    - surname (str | None):
         Real owner's last name.
-    - patronic: (str | None):
+    - patronic (str | None):
         Real owner's patronic name.
-    - born: (int | None):
+    - born (int | None):
         Parent's date of birth as UNIX time.
     """
 
@@ -24,13 +23,13 @@ class CreateOwnerScheme(BaseOwnerScheme):
     """Scheme for owner creation.
 
     #### Attrs:
-    - name: (str):
+    - name (str):
         Real owner's name.
-    - surname: (str):
+    - surname (str):
         Real owner's last name.
-    - patronic: (str | None):
+    - patronic (str | None):
         Real owner's patronic name.
-    - born: (int):
+    - born (int):
         owner's date of birth as UNIX time.
     """
 
@@ -69,13 +68,13 @@ class UpdateOwnerScheme(BaseOwnerScheme):
     """Scheme for updating owner data.
 
     #### Attrs:
-    - name: (str | None):
+    - name (str | None):
         Real owner's name.
     - surname: (str | None):
         Real owner's last name.
-    - patronic: (str | None):
+    - patronic (str | None):
         Real owner's patronic name.
-    - born: (int | None):
+    - born (int | None):
         Parent's date of birth as UNIX time.
     """
 
@@ -88,18 +87,19 @@ class UpdateOwnerScheme(BaseOwnerScheme):
         return value.title()
 
 
-class ResponseOwnerScheme(EmailScheme, BaseOwnerScheme):
+class ResponseOwnerScheme(BaseOwnerScheme):
     """Scheme for data of owner for issuing to the outside.
 
     #### Attrs:
-    - email (str):
-        Owner's email.
-    - name: (str):
+    - name (str):
         Real owner's name.
-    - surname: (str):
+    - surname (str):
         Real owner's last name.
-    - patronic: (str | None):
+    - patronic (str | None):
         Real owner's patronic name.
-    - born: (int):
+    - born (int):
         Parent's date of birth as UNIX time.
     """
+
+    class Config:
+        orm_mode = True

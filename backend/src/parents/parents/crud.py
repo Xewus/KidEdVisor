@@ -1,8 +1,7 @@
 from sqlalchemy import delete, select
-from sqlalchemy.ext.asyncio.session import AsyncSession
-
-from src.authentication.models import AuthModel
-from src.db.postgres.crud import CRUD
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.authentication import AuthModel
+from src.db.postgres import CRUD
 
 from .models import ParentModel
 
@@ -16,14 +15,16 @@ class ParentCRUD(CRUD):
     - get_many: list[ParentModel]
     - get: ParentModel | None
     - update: tuple[ParentModel, None] | tuple[None, str]
-    get_active_parent: ParentModel | None
+    - get_active_parent: ParentModel | None
     - delete_auth: None
     """
 
     model: ParentModel
 
     async def get_active_parent(
-        self, db: AsyncSession, email: str
+        self,
+        db: AsyncSession,
+        email: str,
     ) -> ParentModel | None:
         return await db.scalar(
             select(self.model)

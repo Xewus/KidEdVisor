@@ -6,7 +6,6 @@ from smtplib import SMTP_SSL, SMTPAuthenticationError, SMTPSenderRefused
 
 from fastapi.templating import Jinja2Templates
 from jinja2 import Template
-
 from src.config import CONFIRM_REG_HTML, MAIL_TEMPLATES_DIR, settings
 from src.core.enums import SendEmailFrom
 
