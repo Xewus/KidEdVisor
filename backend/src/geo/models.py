@@ -89,7 +89,7 @@ class DistrictModel(Base, NameGeo):
 
 class CityModel(Base, NameGeo):
     """Table for city data (and towns, villages etc).
-    There may be countries without regions.
+    There are may be countries without regions.
 
     #### Attrs:
     - id (int):
