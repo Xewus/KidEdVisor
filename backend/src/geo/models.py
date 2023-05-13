@@ -11,7 +11,7 @@ class NameGeo:
 
     #### Attrs:
     - name (str):
-        Country name.
+        Geo location name.
     """
 
     name: Mapped[str] = mapped_column(String(Limits.DEFAULT_LEN_GEO_NAME))
@@ -62,7 +62,7 @@ class RegionModel(Base, NameGeo):
 
 
 class DistrictModel(Base, NameGeo):
-    """able for district data.
+    """Table for district data.
 
     #### Attrs:
     - id (int):
@@ -77,7 +77,7 @@ class DistrictModel(Base, NameGeo):
     __tableargs__ = UniqueConstraint(
         "region_id",
         "id",
-        name="unique distric for a region_country",
+        name="unique district for a region_country",
     )
 
     region_id: Mapped[int | None] = mapped_column(
