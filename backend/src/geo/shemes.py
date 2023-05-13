@@ -51,7 +51,9 @@ class AddressScheme(BaseModel):
         example="Камчатский край",
     )
     district: str | None = Field(
-        default=None, title="District name", example="РАЙОН"
+        default=None,
+        title="District name",
+        example="РАЙОН",
     )
     city: str = GeoNameField(
         title="City name",
